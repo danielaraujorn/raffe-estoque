@@ -15,7 +15,12 @@ import DialogContentText from "@material-ui/core/DialogContentText";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import Button from "@material-ui/core/Button";
 import { MuiThemeProvider, createMuiTheme } from "@material-ui/core/styles";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import Checkbox from "@material-ui/core/Checkbox";
+import CheckBoxOutlineBlankIcon from "@material-ui/icons/CheckBoxOutlineBlank";
+import CheckBoxIcon from "@material-ui/icons/CheckBox";
 import logoRaffe from "./logo.svg";
+import moment from "moment";
 const theme = createMuiTheme({
   palette: {
     primary: {
@@ -31,8 +36,10 @@ class App extends Component {
     codNode: "",
     codDevice: "",
     device: {},
+    reabastecido: false,
     locais: [],
-    errorNode: false
+    errorNode: false,
+    erroDevice: false
   };
   handleChange = event => {
     this.setState({ codNode: event.target.value, errorNode: false });
@@ -56,10 +63,13 @@ class App extends Component {
             this.setState({
               codDevice: serial,
               device: content,
-              errorNode: !this.state.codNode.length
+              errorNode: !this.state.codNode.length,
+              erroDevice: false
             });
-          } else if (status === 401)
-            window.location = "https://dev.saiot.ect.ufrn.br";
+          } else {
+            this.setState({ erroDevice: true });
+          }
+          if (status === 401) window.location = "https://dev.saiot.ect.ufrn.br";
         }
       );
       // this.setState({
@@ -75,6 +85,7 @@ class App extends Component {
     requestApi("PUT", "/manager/device", {
       ...this.state.device,
       codNode: this.state.codNode,
+      // ...(this.state.reabastecido ? { supplyData: new Date() } : {}),
       serial: undefined
     }).then(({ status, content }) => {
       console.log(status, content);
@@ -148,6 +159,37 @@ class App extends Component {
                       ))}
                     </Select>{" "}
                   </FormControl>
+                  <div style={{ padding: "10px 0", textAlign: "center" }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={this.state.reabastecido}
+                          icon={<CheckBoxOutlineBlankIcon fontSize="small" />}
+                          checkedIcon={<CheckBoxIcon fontSize="small" />}
+                          onChange={() =>
+                            this.setState({
+                              reabastecido: !this.state.reabastecido
+                            })
+                          }
+                        />
+                      }
+                      label="Barril reabastecido"
+                    />
+                  </div>
+                  {this.state.erroDevice ? (
+                    <p style={{ margin: 0, color: "#f44" }}>
+                      Ouve um erro ao identificar o dispositivo, verifique se
+                      você possui permissão à ele
+                    </p>
+                  ) : this.state.device.name ? (
+                    <p style={{ margin: 0 }}>
+                      Dispositivo <strong>{this.state.device.name}</strong> de
+                      serial <strong>{this.state.codDevice}</strong>{" "}
+                      selecionado.
+                      <br />A data de abastecimento foi{" "}
+                      <strong>{moment().format("DD/MM/YY")}</strong>.
+                    </p>
+                  ) : null}
                 </div>
                 <div style={{ padding: 5 }}>
                   <QrReader
@@ -177,7 +219,14 @@ class App extends Component {
                 Deseja mover o dispositivo{" "}
                 <strong>{this.state.device.name}</strong> de serial{" "}
                 <strong>{this.state.codDevice}</strong> para o local{" "}
-                <strong>{nomeLocal}</strong>?
+                <strong>{nomeLocal}</strong>{" "}
+                <strong>
+                  {this.state.reabastecido &&
+                    " e colocar a data " +
+                      moment().format("DD/MM/YY") +
+                      " como data de reabastecimento"}
+                </strong>
+                ?
               </DialogContentText>
             </DialogContent>
             <DialogActions>
