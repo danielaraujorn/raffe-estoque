@@ -82,6 +82,12 @@ class App extends Component {
     console.error(err);
   };
   handleSubmit = () => {
+    this.state.reabastecido &&
+      requestApi("PUT", "/control/device", {
+        codDevice: this.state.device.codDevice,
+        value: "1",
+        key: "e1"
+      });
     requestApi("PUT", "/manager/device", {
       ...this.state.device,
       codNode: this.state.codNode,
